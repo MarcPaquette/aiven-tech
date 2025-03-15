@@ -10,13 +10,13 @@ resource "aiven_kafka" "demo-kafka" {
   cloud_name              = "google-europe-north1"
   plan                    = "business-4"
   service_name            = "demo-kafka"
-  maintenance_window_dow  = "saturday"
+  maintenance_window_dow  = "sunday"
   maintenance_window_time = "10:00:00"
   kafka_user_config {
     kafka_rest      = true
-    kafka_connect   = false
+    kafka_connect   = true 
     schema_registry = true
-    kafka_version   = "3.4"
+    kafka_version   = "3.8"
 
     kafka {
       auto_create_topics_enable  = true
@@ -37,7 +37,7 @@ resource "aiven_kafka_connect" "demo-kafka-connect" {
   cloud_name              = "google-europe-north1"
   plan                    = "business-4"
   service_name            = "demo-kafka-connect"
-  maintenance_window_dow  = "monday"
+  maintenance_window_dow  = "sunday"
   maintenance_window_time = "10:00:00"
 
   kafka_connect_user_config {
@@ -73,6 +73,7 @@ resource "aiven_kafka_connector" "kafka-pg-source" {
 
   config = {
     "name"                        = "kafka-pg-source"
+    "topic.prefix"                   = "prefix" 
     "connector.class"             = "io.debezium.connector.postgresql.PostgresConnector"
     "snapshot.mode"               = "initial"
     "database.hostname"           = sensitive(aiven_pg.demo-pg.service_host)
@@ -99,30 +100,9 @@ resource "aiven_kafka_connector" "kafka-pg-source" {
 
 #### Open search sync
 
-
-resource "aiven_kafka" "kafka" {
-  project                 = var.project_name
-  service_name            = var.kafka_name
-  cloud_name              = "google-europe-west1"
-  plan                    = "business-4"
-  maintenance_window_dow  = "monday"
-  maintenance_window_time = "10:00:00"
-
-  kafka_user_config {
-    // Enables Kafka Connectors
-    kafka_connect = true
-    kafka_version = "3.8"
-
-    kafka {
-      group_max_session_timeout_ms = 70000
-      log_retention_bytes          = 1000000000
-    }
-  }
-}
-
 resource "aiven_kafka_topic" "kafka-topic" {
-  project      = aiven_kafka.kafka.project
-  service_name = aiven_kafka.kafka.service_name
+  project      = aiven_kafka.demo-kafka.project
+  service_name = aiven_kafka.demo-kafka.service_name
   topic_name   = var.kafka_topic_name
   partitions   = 3
   replication  = 2
@@ -130,20 +110,21 @@ resource "aiven_kafka_topic" "kafka-topic" {
 
 resource "aiven_opensearch" "os" {
   project                 = var.project_name
-  service_name            = var.os_name
-  cloud_name              = "google-europe-west1"
+  service_name            = "aiven-opensearch" 
+  cloud_name              = "google-europe-north1"
   plan                    = "startup-4"
-  maintenance_window_dow  = "monday"
+  maintenance_window_dow  = "sunday"
   maintenance_window_time = "10:00:00"
 }
 
 resource "aiven_kafka_connector" "kafka-os-connector" {
-  project        = aiven_kafka.kafka.project
-  service_name   = aiven_kafka.kafka.service_name
+  project        = aiven_kafka.demo-kafka.project
+  service_name   = aiven_kafka.demo-kafka.service_name
   connector_name = var.kafka_connector_name
 
   config = {
     "topics"                         = aiven_kafka_topic.kafka-topic.topic_name
+    "topic.prefix"                   = "prefix" 
     "connector.class"                = "io.aiven.kafka.connect.opensearch.OpensearchSinkConnector"
     "type.name"                      = "os-connector"
     "name"                           = var.kafka_connector_name

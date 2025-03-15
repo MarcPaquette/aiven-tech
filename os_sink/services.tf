@@ -1,5 +1,5 @@
 resource "aiven_kafka" "kafka" {
-  project                 = var.avn_project
+  project                 = var.project_name
   service_name            = var.kafka_name
   cloud_name              = "google-europe-west1"
   plan                    = "business-4"
@@ -27,7 +27,7 @@ resource "aiven_kafka_topic" "kafka-topic" {
 }
 
 resource "aiven_opensearch" "os" {
-  project                 = var.avn_project
+  project                 = var.project_name
   service_name            = var.os_name
   cloud_name              = "google-europe-west1"
   plan                    = "startup-4"

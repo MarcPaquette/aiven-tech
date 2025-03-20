@@ -1,5 +1,5 @@
 resource "aiven_kafka" "kafka" {
-  project                 = var.project_name
+  project                 = var.avn_project
   service_name            = var.kafka_name
   cloud_name              = "google-europe-west1"
   plan                    = "business-4"
@@ -10,6 +10,7 @@ resource "aiven_kafka" "kafka" {
     // Enables Kafka Connectors
     kafka_connect = true
     kafka_version = "3.8"
+    schema_registry                = true
 
     kafka {
       group_max_session_timeout_ms = 70000
@@ -27,7 +28,7 @@ resource "aiven_kafka_topic" "kafka-topic" {
 }
 
 resource "aiven_opensearch" "os" {
-  project                 = var.project_name
+  project                 = var.avn_project
   service_name            = var.os_name
   cloud_name              = "google-europe-west1"
   plan                    = "startup-4"
@@ -42,6 +43,7 @@ resource "aiven_kafka_connector" "kafka-os-connector" {
 
   config = {
     "topics"                         = aiven_kafka_topic.kafka-topic.topic_name
+    "topic.prefix" =  "prefix"
     "connector.class"                = "io.aiven.kafka.connect.opensearch.OpensearchSinkConnector"
     "type.name"                      = "os-connector"
     "name"                           = var.kafka_connector_name

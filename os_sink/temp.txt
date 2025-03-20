@@ -1,0 +1,17 @@
+avn service get franz --json | jq '.connection_info.schema_registry_uri'
+"https://avnadmin:AVNS_0EzyhG3GgYMxhSvlg4n@franz-tech-demo.f.aivencloud.com:27223"
+https://<SCHEMA_REGISTRY_USER>:<SCHEMA_REGISTRY_PASSWORD>@<APACHE_KAFKA_HOST>:<SCHEMA_REGISTRY_PORT>
+
+avn service get franz --format '{service_uri}'
+franz-tech-demo.f.aivencloud.com:27220
+The Apache Kafka details from the previous section: <APACHE_KAFKA_HOST>:<APACHE_KAFKA_PORT>
+
+"key.converter.schema.registry.url": "https://<APACHE_KAFKA_HOST>:<SCHEMA_REGISTRY_PORT>",
+"key.converter.basic.auth.credentials.source": "USER_INFO",
+"key.converter.schema.registry.basic.auth.user.info": "<SCHEMA_REGISTRY_USER>:<SCHEMA_REGISTRY_PASSWORD>",
+"value.converter": "io.confluent.connect.avro.AvroConverter",
+"value.converter.schema.registry.url": "https://<APACHE_KAFKA_HOST>:<SCHEMA_REGISTRY_PORT>",
+"value.converter.basic.auth.credentials.source": "USER_INFO",
+"value.converter.schema.registry.basic.auth.user.info": "<SCHEMA_REGISTRY_USER>:<SCHEMA_REGISTRY_PASSWORD>",
+"schema.history.internal.kafka.topic": "<HISTORY_TOPIC_NAME>",
+"schema.history.internal.kafka.bootstrap.servers": "<APACHE_KAFKA_HOST>:<APACHE_KAFKA_PORT>",

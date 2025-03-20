@@ -1,0 +1,6 @@
+avn_token = "xSo9Tu7SfPjXmwALV2TpE5RPCjWyksfT0VyWzT77VGVFa9mi0zUH8uFTmYpO6vq8CRmLrv+2g3CnL+4L55oyRKv0T5fVqtCaz8Uaulc5iUy921hojMuoRUe0tun8nCM2ua522ywkiN8xl85NtztiNBOD/3r4jy8Ps1ScXHLplNnhSXTc1wxludxXvXGQBy5BWbS+OAbenDoJxhWVduQAk9lh4hnCkoNJyZm9KGUAV+u2NVr8jQbhLcL9vGqGCY4+PX3gouuNnxzIDNUrm4CYSks9aG0qL6deqJWjM0yF1H0h3S56oL1a5EQng3GzKHw4gLU3bj/RtWiim1eEF8x+afevQLx7kWHI6I3bmEXoiEY2VxCB75oo9hHJnQ=="
+avn_project = "tech-demo"
+kafka_name = "franz"
+kafka_connector_name = "connector"
+kafka_topic_name = "topic"
+os_name = "opensearch"

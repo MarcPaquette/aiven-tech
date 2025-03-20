@@ -1,130 +1,57 @@
 resource "aiven_pg" "demo-pg" {
-  project      = var.project_name
+  project      = var.avn_project
   service_name = "demo-postgres"
   cloud_name   = "google-europe-north1"
   plan         = "business-4"
 }
 
-resource "aiven_kafka" "demo-kafka" {
-  project                 = var.project_name
-  cloud_name              = "google-europe-north1"
+
+resource "aiven_kafka" "franz" {
+  project                 = var.avn_project
+  service_name            = var.kafka_name
+  cloud_name              = "google-europe-west1"
   plan                    = "business-4"
-  service_name            = "demo-kafka"
-  maintenance_window_dow  = "sunday"
+  maintenance_window_dow  = "monday"
   maintenance_window_time = "10:00:00"
+
   kafka_user_config {
-    kafka_rest      = true
-    kafka_connect   = true 
-    schema_registry = true
-    kafka_version   = "3.8"
+    // Enables Kafka Connectors
+    kafka_connect = true
+    kafka_version = "3.8"
+    schema_registry                = true
 
     kafka {
-      auto_create_topics_enable  = true
-      num_partitions             = 3
-      default_replication_factor = 2
-      min_insync_replicas        = 2
-    }
-
-    kafka_authentication_methods {
-      certificate = true
-    }
-
-  }
-}
-
-resource "aiven_kafka_connect" "demo-kafka-connect" {
-  project                 = var.project_name
-  cloud_name              = "google-europe-north1"
-  plan                    = "business-4"
-  service_name            = "demo-kafka-connect"
-  maintenance_window_dow  = "sunday"
-  maintenance_window_time = "10:00:00"
-
-  kafka_connect_user_config {
-    kafka_connect {
-      consumer_isolation_level = "read_committed"
-    }
-
-    public_access {
-      kafka_connect = false
+      group_max_session_timeout_ms = 70000
+      log_retention_bytes          = 1000000000
     }
   }
 }
-
-resource "aiven_service_integration" "i1" {
-  project                  = var.project_name
-  integration_type         = "kafka_connect"
-  source_service_name      = aiven_kafka.demo-kafka.service_name
-  destination_service_name = aiven_kafka_connect.demo-kafka-connect.service_name
-
-  kafka_connect_user_config {
-    kafka_connect {
-      group_id             = "connect"
-      status_storage_topic = "__connect_status"
-      offset_storage_topic = "__connect_offsets"
-    }
-  }
-}
-
-resource "aiven_kafka_connector" "kafka-pg-source" {
-  project        = var.project_name
-  service_name   = aiven_kafka_connect.demo-kafka-connect.service_name
-  connector_name = "kafka-pg-source"
-
-  config = {
-    "name"                        = "kafka-pg-source"
-    "topic.prefix"                   = "prefix" 
-    "connector.class"             = "io.debezium.connector.postgresql.PostgresConnector"
-    "snapshot.mode"               = "initial"
-    "database.hostname"           = sensitive(aiven_pg.demo-pg.service_host)
-    "database.port"               = sensitive(aiven_pg.demo-pg.service_port)
-    "database.password"           = sensitive(aiven_pg.demo-pg.service_password)
-    "database.user"               = sensitive(aiven_pg.demo-pg.service_username)
-    "database.dbname"             = "defaultdb"
-    "database.server.name"        = "replicator"
-    "database.ssl.mode"           = "require"
-    "include.schema.changes"      = true
-    "include.query"               = true
-    "table.include.list"          = "public.tab1"
-    "plugin.name"                 = "pgoutput"
-    "publication.autocreate.mode" = "filtered"
-    "decimal.handling.mode"       = "double"
-    "_aiven.restart.on.failure"   = "true"
-    "heartbeat.interval.ms"       = 30000
-    "heartbeat.action.query"      = "INSERT INTO heartbeat (status) VALUES (1)"
-  }
-  depends_on = [aiven_service_integration.i1]
-}
-
-
-
-#### Open search sync
 
 resource "aiven_kafka_topic" "kafka-topic" {
-  project      = aiven_kafka.demo-kafka.project
-  service_name = aiven_kafka.demo-kafka.service_name
+  project      = aiven_kafka.franz.project
+  service_name = aiven_kafka.franz.service_name
   topic_name   = var.kafka_topic_name
   partitions   = 3
   replication  = 2
 }
 
 resource "aiven_opensearch" "os" {
-  project                 = var.project_name
-  service_name            = "aiven-opensearch" 
-  cloud_name              = "google-europe-north1"
+  project                 = var.avn_project
+  service_name            = var.os_name
+  cloud_name              = "google-europe-west1"
   plan                    = "startup-4"
-  maintenance_window_dow  = "sunday"
+  maintenance_window_dow  = "monday"
   maintenance_window_time = "10:00:00"
 }
 
 resource "aiven_kafka_connector" "kafka-os-connector" {
-  project        = aiven_kafka.demo-kafka.project
-  service_name   = aiven_kafka.demo-kafka.service_name
+  project        = aiven_kafka.franz.project
+  service_name   = aiven_kafka.franz.service_name
   connector_name = var.kafka_connector_name
 
   config = {
     "topics"                         = aiven_kafka_topic.kafka-topic.topic_name
-    "topic.prefix"                   = "prefix" 
+    "topic.prefix" =  "prefix"
     "connector.class"                = "io.aiven.kafka.connect.opensearch.OpensearchSinkConnector"
     "type.name"                      = "os-connector"
     "name"                           = var.kafka_connector_name
@@ -136,5 +63,54 @@ resource "aiven_kafka_connector" "kafka-os-connector" {
     "tasks.max"                      = 1
     "schema.ignore"                  = true
     "value.converter.schemas.enable" = false
+  }
+}
+
+
+resource "aiven_kafka_connector" "kafka-pg-connector" {
+  project        = aiven_kafka.franz.project
+  service_name   = "kafka-pg-connector"
+  connector_name = "kafka-pg-connector"
+
+  config = {
+    "name" ="kafka-pg-connector",
+    "connector.class" = "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname"           = sensitive(aiven_pg.demo-pg.service_host)
+    "database.port"               = sensitive(aiven_pg.demo-pg.service_port)
+    "database.password"           = sensitive(aiven_pg.demo-pg.service_password)
+    "database.user"               = sensitive(aiven_pg.demo-pg.service_username)
+    "database.dbname"             = "defaultdb"
+    "database.ssl.mode" = "require",
+    "database.server.id" = "12345",
+    "plugin.name" = "pgoutput",
+    "publication.autocreate.mode" = "all_tables",
+    "topic.prefix" = "prefix",
+    "table.include.list" = "defaultdb.users",
+    "tasks.max" ="1",
+    "key.converter" = "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url" = aiven_kafka.franz.service_uri,
+    "key.converter.basic.auth.credentials.source" = "USER_INFO",
+    "key.converter.schema.registry.basic.auth.user.info" = format("%s:%s",aiven_kafka.franz.service_username, aiven_kafka.franz.service_password),
+    "value.converter" = "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url" = format("https://%s",aiven_kafka.franz.components[2].connection_uri),
+    "value.converter.basic.auth.credentials.source" = "USER_INFO",
+    "value.converter.schema.registry.basic.auth.user.info" = format("%s:%s",aiven_kafka.franz.service_username, aiven_kafka.franz.service_password),
+    "schema.history.internal.kafka.topic" = "topic",
+    "schema.history.internal.kafka.bootstrap.servers" = format("%s:%s", aiven_kafka.franz.service_host, aiven_kafka.franz.service_port),
+    "schema.history.internal.producer.security.protocol" = "SSL",
+    "schema.history.internal.producer.ssl.keystore.type" = "PKCS12",
+    "schema.history.internal.producer.ssl.keystore.location" = "/run/aiven/keys/public.keystore.p12",
+    "schema.history.internal.producer.ssl.keystore.password" = "password",
+    "schema.history.internal.producer.ssl.truststore.location" = "/run/aiven/keys/public.truststore.jks",
+    "schema.history.internal.producer.ssl.truststore.password" = "password",
+    "schema.history.internal.producer.ssl.key.password" = "password",
+    "schema.history.internal.consumer.security.protocol" = "SSL",
+    "schema.history.internal.consumer.ssl.keystore.type" = "PKCS12",
+    "schema.history.internal.consumer.ssl.keystore.location" = "/run/aiven/keys/public.keystore.p12",
+    "schema.history.internal.consumer.ssl.keystore.password" = "password",
+    "schema.history.internal.consumer.ssl.truststore.location" = "/run/aiven/keys/public.truststore.jks",
+    "schema.history.internal.consumer.ssl.truststore.password" = "password",
+    "schema.history.internal.consumer.ssl.key.password" = "password",
+    "include.schema.changes" = "true"
   }
 }

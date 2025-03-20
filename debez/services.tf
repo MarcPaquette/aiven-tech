@@ -16,7 +16,7 @@ resource "aiven_kafka" "demo-kafka" {
     kafka_rest      = true
     kafka_connect   = false
     schema_registry = true
-    kafka_version   = "3.4"
+    kafka_version   = "3.8"
 
     kafka {
       auto_create_topics_enable  = true
@@ -73,6 +73,7 @@ resource "aiven_kafka_connector" "kafka-pg-source" {
 
   config = {
     "name"                        = "kafka-pg-source"
+    "topic.prefix"                   = "prefix" 
     "connector.class"             = "io.debezium.connector.postgresql.PostgresConnector"
     "snapshot.mode"               = "initial"
     "database.hostname"           = sensitive(aiven_pg.demo-pg.service_host)

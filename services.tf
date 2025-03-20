@@ -23,6 +23,8 @@ resource "aiven_kafka" "franz" {
     kafka {
       group_max_session_timeout_ms = 70000
       log_retention_bytes          = 1000000000
+      auto_create_topics_enable    = true
+
     }
   }
 }
@@ -85,6 +87,7 @@ resource "aiven_kafka_connector" "kafka-pg-connector" {
   config = {
     "name"                                                     = "kafka-pg-connector",
     "topics"                                                   = aiven_kafka_topic.kafka-topic.topic_name
+    "topic.prefix"                                             = "prefix",
     "connector.class"                                          = "io.debezium.connector.postgresql.PostgresConnector",
     "database.hostname"                                        = sensitive(aiven_pg.demo-pg.service_host)
     "database.port"                                            = sensitive(aiven_pg.demo-pg.service_port)
@@ -94,12 +97,11 @@ resource "aiven_kafka_connector" "kafka-pg-connector" {
     "database.ssl.mode"                                        = "require",
     "database.server.id"                                       = "12345",
     "plugin.name"                                              = "pgoutput",
+    "publication.name"                                         = "dbz_publication",
     "publication.autocreate.mode"                              = "all_tables",
-    "topic.prefix"                                             = "prefix",
-    "table.include.list"                                       = "defaultdb.users",
+    # "table.include.list"                                       = "defaultdb.users",
     "tasks.max"                                                = "1",
     "include.schema.changes"                                   = "true"
-    /*
     "key.converter"                                            = "io.confluent.connect.avro.AvroConverter",
     "key.converter.schema.registry.url"                        = format("https://%s", resource.aiven_kafka.franz.components[2].connection_uri),
     "key.converter.basic.auth.credentials.source"              = "USER_INFO",
@@ -124,6 +126,5 @@ resource "aiven_kafka_connector" "kafka-pg-connector" {
     "schema.history.internal.consumer.ssl.truststore.location" = "/run/aiven/keys/public.truststore.jks",
     "schema.history.internal.consumer.ssl.truststore.password" = "password",
     "schema.history.internal.consumer.ssl.key.password"        = "password",
-    */
   }
 }

@@ -99,7 +99,7 @@ resource "aiven_kafka_connector" "kafka-pg-connector" {
     "plugin.name"                                              = "pgoutput",
     "publication.name"                                         = "dbz_publication",
     "publication.autocreate.mode"                              = "all_tables",
-    # "table.include.list"                                       = "defaultdb.users",
+    "table.include.list"                                       = "defaultdb.users",
     "tasks.max"                                                = "1",
     "include.schema.changes"                                   = "true"
     "key.converter"                                            = "io.confluent.connect.avro.AvroConverter",

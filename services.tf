@@ -68,17 +68,6 @@ resource "aiven_kafka_connector" "kafka-os-connector" {
   }
 }
 
-locals {
-  schema_registry_uri = aiven_kafka.franz.kafka[0].schema_registry_uri
-
-  # Extract the user:password part from the URI
-  credentials_part = regex("https://([^@]+)@", local.schema_registry_uri)[0]
-
-  # Split into username and password
-  schema_registry_username = split(":", regexall("[^/]+", local.credentials_part)[0])[0]
-  schema_registry_password = split(":", regexall("[^/]+", local.credentials_part)[0])[1]
-}
-
 resource "aiven_kafka_connector" "kafka-pg-connector" {
   project        = aiven_kafka.franz.project
   service_name   = aiven_kafka.franz.service_name
